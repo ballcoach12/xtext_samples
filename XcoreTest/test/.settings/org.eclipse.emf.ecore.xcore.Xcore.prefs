@@ -1,0 +1,17 @@
+#Wed Sep 08 12:51:28 EDT 2021
+generateGeneratedAnnotation=false
+includeDateInGenerated=false
+outlet.DEFAULT_OUTPUT.userOutputPerSourceFolder=true
+outlet.DEFAULT_OUTPUT.installDslAsPrimarySource=false
+//outlet.DEFAULT_OUTPUT.sourceFolder.src/test/java.directory=build/xcore/test
+eclipse.preferences.version=1
+generateSuppressWarnings=true
+BuilderConfiguration.is_project_specific=true
+//outlet.DEFAULT_OUTPUT.sourceFolder.src/main/resources.directory=build/xcore/main
+//outlet.DEFAULT_OUTPUT.sourceFolder.src/main/java.directory=build/xcore/main
+useJavaCompilerCompliance=false
+outlet.DEFAULT_OUTPUT.hideLocalSyntheticVariables=true
+//outlet.DEFAULT_OUTPUT.sourceFolder.src/test/resources.directory=build/xcore/test
+outlet.DEFAULT_OUTPUT.sourceFolder.model.directory=build/xcore/main
+ValidatorConfiguration.is_project_specific=true
+targetJavaVersion=Java11

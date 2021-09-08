@@ -1,0 +1,9 @@
+@Ecore(nsPrefix="test", nsURI="http://www.selinc.com/xcore/test")
+@GenModel(bundleManifest="false", modelDirectory="com.selinc.xcore/test/build/xcore/main", complianceLevel="11.0")
+
+package com.selinc.xcore.test
+
+class Bob {
+	String friend
+	int age
+}

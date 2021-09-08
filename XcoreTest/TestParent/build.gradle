@@ -1,0 +1,376 @@
+// Copyright (c) Schweitzer Engineering Laboratories, Inc.
+// SEL Confidential
+
+plugins {
+	id "com.github.johnrengelman.shadow" version "6.1.0"
+	id "io.micronaut.application" version "1.5.0"
+	id "java-library"
+	id "maven-publish"
+	id "eclipse"
+	id 'com.google.protobuf' version '0.8.16'
+	//id 'org.xtext.builder' version '2.1.0'
+	id 'org.xtext.builder' version "3.0.0-M1"
+	id 'org.xtext.xtend' version '2.1.0'
+}
+
+ext.FLISRVersion = project.hasProperty('FLISRVersion') ? project.getProperty('FLISRVersion') : '0.1.0'
+version "${FLISRVersion}"
+group "com.selinc.flisr"
+
+repositories {
+	jcenter()
+	maven {
+		url "${artifactory_contextUrl}/selang-gradle-dev"
+		credentials {
+			username "${artifactory_user}"
+			password "${artifactory_password}"
+		}
+		metadataSources {
+			mavenPom()
+			artifact()
+			ignoreGradleMetadataRedirection()
+		}
+	}
+}
+
+configurations {
+	developmentOnly
+}
+
+configurations.all {
+	resolutionStrategy {
+		force 'com.fasterxml.jackson.core:jackson-annotations:2.11.4'
+		force 'com.fasterxml.jackson.core:jackson-core:2.11.4'
+		force 'com.fasterxml.jackson.core:jackson-databind:2.11.4'
+		force 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.11.4'
+	}
+}
+
+// Fix for EDAPT-11749
+// https://blogs.itemis.com/en/integrating-xtext-language-support-in-visual-studio-code
+// and
+// https://imperceptiblethoughts.com/shadow/configuration/merging/#appending-text-files
+shadowJar() {
+	append 'plugin.properties'
+}
+
+
+micronaut {
+	runtime "netty"
+	testRuntime "junit5"
+	processing {
+		incremental true
+		annotations "com.selinc.flisr.*"
+	}
+}
+
+tasks.withType(JavaCompile) {
+	options.fork = true
+	options.forkOptions.jvmArgs << '-Dmicronaut.openapi.views.spec=rapidoc.enabled=true,swagger-ui.enabled=true,swagger-ui.theme=flattop'
+	options.encoding = "UTF-8"
+    options.compilerArgs.addAll([
+        '-parameters',
+        // enables incremental compilation
+        '-Amicronaut.processing.incremental=true',
+        '-Amicronaut.processing.annotations=com.selinc.*',
+        "-Amicronaut.processing.group=$project.group",
+        "-Amicronaut.processing.module=$project.name",
+    ])
+    
+}
+
+
+
+
+ext.xtextVersion = "2.25.0"
+dependencies {
+
+	// Topology api
+//	implementation project(':TopologyGRPC')
+
+	//MICRONAUT
+	compileOnly(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+
+	testAnnotationProcessor "io.micronaut:micronaut-inject-java:$micronautVersion"
+	testAnnotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+
+	testImplementation "io.micronaut:micronaut-inject-java:$micronautVersion"
+	testImplementation("io.micronaut.test:micronaut-test-junit5")
+	testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+	testImplementation group: 'org.skyscreamer', name: 'jsonassert', version: '1.5.0'
+	
+
+	annotationProcessor("io.micronaut:micronaut-inject-java")
+	annotationProcessor("io.micronaut:micronaut-graal")
+	annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+    annotationProcessor("io.micronaut:micronaut-validation")
+    annotationProcessor("io.micronaut.configuration:micronaut-openapi")
+
+	implementation group: 'io.micronaut.grpc', name: 'micronaut-grpc-server-runtime', version: '2.5.0'
+	implementation group: 'io.micronaut.grpc', name: 'micronaut-grpc-client-runtime', version: '2.5.0'
+	
+	implementation("io.micronaut:micronaut-inject")
+	implementation("io.micronaut:micronaut-validation")
+	implementation("io.micronaut:micronaut-runtime")
+	implementation("javax.annotation:javax.annotation-api")
+	implementation("io.micronaut:micronaut-http-client")
+	implementation("io.micronaut:micronaut-http-server-netty")
+	implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
+
+	//implementation project(':com.selinc.flisr.project.model.modeldsl')
+//	implementation project(":com.selinc.flisr.project.model")
+//	implementation project(':Bandicoot')
+	
+	implementation(group: 'com.selinc', name: 'util', version: '1.2.66')
+
+	//SWAGGER
+	annotationProcessor("io.micronaut.openapi:micronaut-openapi:2.4.0")
+	implementation("io.swagger.core.v3:swagger-annotations")
+
+	//LOMBOK
+	compileOnly 'org.projectlombok:lombok:1.18.20'
+	annotationProcessor 'org.projectlombok:lombok:1.18.20'
+	testCompileOnly 'org.projectlombok:lombok:1.18.20'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+
+	compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:${xtextVersion}"
+	compile "org.eclipse.xtext:org.eclipse.xtext:${xtextVersion}"
+
+
+	testImplementation('net.jodah:failsafe:2.4.0')
+
+	compileOnly("org.graalvm.nativeimage:svm")
+	implementation("io.swagger.core.v3:swagger-annotations")
+
+	//LOGGER
+	implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.31'
+	implementation ("ch.qos.logback:logback-classic:1.2.5")
+	
+	implementation group: 'org.emfjson', name: 'emfjson-jackson', version: '1.3.0'
+}
+
+test.classpath += configurations.developmentOnly
+
+test {
+	useJUnitPlatform()
+	testLogging.showStandardStreams = false
+	environment "PROXY_ADDRESS", "127.0.0.1"
+}
+
+task debug(type:JavaExec) {
+	jvmArgs '-Xdebug', '-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=9099'
+	dependsOn(sourceSets.main.runtimeClasspath)
+	classpath = sourceSets.main.runtimeClasspath.filter{it.exists()}
+	main = 'com.selinc.flisr.config.Application'
+	standardInput = System.in
+	group = 'application'
+	description = 'Starts a debug server'
+}
+
+subprojects {
+	ext.xtextVersion = '2.25.0'
+	repositories {
+		jcenter()
+		mavenCentral()
+		maven {
+			url "${artifactory_contextUrl}/sel-gradle-dev"
+			credentials {
+				username "${artifactory_user}"
+				password "${artifactory_password}"
+			}
+			metadataSources {
+				mavenPom()
+				artifact()
+			}
+		}
+	}
+
+	apply plugin: 'java'
+	apply plugin: 'org.xtext.builder'
+apply plugin: 'org.xtext.xtend'
+	
+	
+	dependencies {
+		compile(group: 'com.selinc', name: 'util', version: '1.2.66')
+		compile platform("org.eclipse.xtext:xtext-dev-bom:${xtextVersion}")
+
+		implementation group: 'org.slf4j', name: 'slf4j-api', version: '1.7.31'
+		implementation ("ch.qos.logback:logback-classic:1.2.5")
+
+		//LOMBOK
+		compileOnly 'org.projectlombok:lombok:1.18.20'
+		annotationProcessor 'org.projectlombok:lombok:1.18.20'
+		testCompileOnly 'org.projectlombok:lombok:1.18.20'
+		testAnnotationProcessor 'org.projectlombok:lombok:1.18.20'
+		
+		compile 'org.eclipse.xtext:org.eclipse.xtext:2.25.0'
+	compile "org.eclipse.xtext:org.eclipse.xtext.xbase:2.25.0"
+	compile 'org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:1.6.0'
+	
+	//implementation project(":com.selinc.blueframe.datadirectory.model")
+
+	xtextLanguages ('org.eclipse.emf:org.eclipse.emf.ecore.xcore:1.17.0') {
+		exclude group: 'org.antlr', module: 'antlr-runtime'
+		exclude group: 'org.eclipse.xtext', module: 'org.eclipse.xtext'
+		exclude group: 'org.eclipse.xtext', module: 'org.eclipse.xtext.xbase'
+	}
+	xtextLanguages 'org.eclipse.emf:org.eclipse.emf.ecore.xcore.lib:1.6.0'
+	xtextLanguages 'org.eclipse.emf:org.eclipse.emf.codegen.ecore:2.25.0'
+	xtextLanguages 'org.eclipse.emf:org.eclipse.emf.codegen:2.22.0'
+	xtextLanguages 'org.eclipse.emf:org.eclipse.emf.ecore:2.25.0'
+	xtextLanguages "org.eclipse.xtext:org.eclipse.xtext.xbase:${xtextVersion}"
+	xtextLanguages 'org.eclipse.emf:org.eclipse.emf.codegen.ecore.xtext:1.6.0'
+	xtextLanguages 'org.eclipse.xtext:org.eclipse.xtext.ecore:2.25.0'
+		
+	}
+	
+	sourceSets {
+	main {
+		resources {
+			exclude '**/*.xcore'
+		}
+	}
+}
+
+configurations.all {
+	    resolutionStrategy { 
+	        eachDependency { DependencyResolveDetails details ->
+	            if (details.requested.group == 'org.eclipse.platform' && details.requested.name == 'org.eclipse.core.runtime') {
+	                details.useVersion "3.19.0"
+	            }
+	            if (details.requested.group == 'org.eclipse.platform' && details.requested.name == 'org.eclipse.equinox.common') {
+	                details.useVersion("3.13.0")
+	            }
+	        }
+	    }
+	}
+
+xtext {
+	version = "${xtextVersion}"
+	languages {
+		ecore {
+			setup = 'org.eclipse.xtext.ecore.EcoreSupport'
+		}
+		codegen {
+			setup = 'org.eclipse.emf.codegen.ecore.xtext.GenModelSupport'
+		}
+		xcore {
+			setup = 'org.eclipse.emf.ecore.xcore.XcoreStandaloneSetup'
+			generator.outlet.cleanAutomatically=true
+			generator.outlet.producesJava = true
+		}
+	}
+	sourceSets {
+		 main {
+			srcDir 'model/'
+			output {
+				dir(xtext.languages.xcore.generator.outlets.DEFAULT_OUTPUT, 'build/xcore/main')
+			}
+		}
+	}
+}
+	group = 'com.selinc.flisr'
+	version = '1.0.0-SNAPSHOT'
+
+	sourceCompatibility = '11'
+	targetCompatibility = '11'
+
+	configurations.all {
+		exclude group: 'asm'
+	}
+}
+application{
+	// todo set args to turn off grpc logs
+	//applicationDefaultJvmArgs = ['-Dgreeting.language=en']
+	mainClass.set("com.selinc.flisr.config.Application")
+}
+mainClassName = "com.selinc.flisr.config.Application"
+java {
+	sourceCompatibility = JavaVersion.toVersion('11')
+	targetCompatibility = JavaVersion.toVersion('11')
+}
+
+/*************************** Tasks ***************************/
+/**
+task copyFlisrConfig(type: Copy ) {
+	println('running copyFlisrConfig')
+	group = 'dart'
+	from project(':config').buildDir.absolutePath + "/web"
+	into "${buildDir}/resources/main/config"
+}**/
+
+build  {
+	//dependsOn 'copyFlisrConfig'
+}
+
+task buildAllAndDeploy {
+	dependsOn 'build'
+	group = 'build'
+}
+
+// Keeps the CNAB files updated
+task updateCNABFiles() {
+	doFirst {
+		// values.yaml
+		ant.replaceregexp(match:'(version:).*', replace:"\\1 $version") {
+			fileset(dir: '..\\cnab\\app\\charts\\flisr-config\\', includes: 'values.yaml')
+		}
+		// Chart.yaml
+		ant.replaceregexp(match:'(version:).*', replace:"\\1 $version") {
+			fileset(dir: '..\\cnab\\app\\charts\\flisr-config\\', includes: 'Chart.yaml')
+		}
+		ant.replaceregexp(match:'(appVersion:).*', replace:"\\1 \"$version\"") {
+			fileset(dir: '..\\cnab\\app\\charts\\flisr-config\\', includes: 'Chart.yaml')
+		}
+		// duffle.json
+		ant.replaceregexp(match:'("image":.*?flisr-config:).*', replace:"\\1$version\"") {
+			fileset(dir: '..\\', includes: 'duffle.json')
+		}
+		ant.replaceregexp(match:'("version":).*', replace:"\\1 \"$version\",") {
+			fileset(dir: '..\\', includes: 'duffle.json')
+		}
+	}
+}
+
+def dockerBuildImage = "flisr-docker-dev.artifactory.metro.ad.selinc.com/flisr-config:$version"
+dockerBuild {
+	images = [dockerBuildImage]
+	println("running dockerBuild")
+}
+
+dockerPush {
+	images = [dockerBuildImage]
+	registryCredentials {
+		url = 'https://flisr-docker-dev.artifactory.metro.ad.selinc.com'
+		username = "${artifactory_user}"
+		password = "${artifactory_password}"
+	}
+}
+
+publishing {
+    publications {
+        flisrCNAB(MavenPublication) {
+            groupId = 'flisr'
+			artifactId = 'flisr-config-cnab'
+			version = "${version}"
+			artifact('..\\flisrCNAB.tgz') {
+				classifier 'flisrCNAB'
+				extension 'tgz'
+			}
+			artifact('..\\flisrCNAB-thin.tgz') {
+				classifier 'flisrCNAB-thin'
+				extension 'tgz'
+			}
+        }
+    }
+
+	repositories {
+		maven {
+			url "${artifactory_contextUrl}/selang-gradle-dev"
+			credentials {
+				username "${artifactory_user}"
+				password "${artifactory_password}"
+			}
+		}
+	}
+}

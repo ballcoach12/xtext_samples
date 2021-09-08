@@ -1,0 +1,12 @@
+xtext {
+   sourceSets {
+    
+    main {
+        srcDir 'build/xcore/main'
+        
+    }
+
+}
+    
+}
+

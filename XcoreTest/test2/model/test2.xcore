@@ -1,0 +1,12 @@
+//@Ecore(nsPrefix="test2", nsURI="http://www.selinc.com/xcore/test2")
+//@GenModel(bundleManifest="false", modelDirectory="com.selinc.xcore/test2/build/xcore/main",
+//	complianceLevel="11.0")
+	package com.selinc.xcore.test2
+
+import com.selinc.xcore.test.Bob
+
+class Susie {
+	String uncle
+	refers Bob bob
+	String aunt
+}
